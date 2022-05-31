@@ -1,9 +1,9 @@
 import { View, Text, Button, TouchableOpacity } from 'react-native'
 import React from 'react'
 import styles from './LoginScreen.styles'
-import { ILoginProp } from './ILoginProps'
+import { INavigationProps } from '../../navigations/INavigationProps'
 
-const LoginScreen: React.FC<ILoginProp> = ({ navigation }) => {
+const LoginScreen: React.FC<INavigationProps> = ({ navigation }) => {
 
   return (
     <View>
@@ -13,7 +13,7 @@ const LoginScreen: React.FC<ILoginProp> = ({ navigation }) => {
           backgroundColor: 'red'
         }}
         onPress={() => {
-          navigation.navigate("HomeScreen")
+          navigation.navigate("HomeScreen", { title: "Hello" })
         }}>
         <Text>Click</Text>
       </TouchableOpacity>

@@ -1,12 +1,13 @@
 import { Text, View } from 'react-native'
-import React from 'react'
+import React, { useEffect } from 'react'
 import styles from './HomeScreen.styles'
-import { IHomeProps } from './IHomeProps'
+import { INavigationProps } from '../../navigations/INavigationProps'
 
-const HomeScreen: React.FC<IHomeProps> = ({ navigation }) => {
+const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
+
   return (
     <View>
-      <Text>Home page</Text>
+      <Text></Text>
     </View>
   )
 }
