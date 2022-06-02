@@ -6,11 +6,11 @@ import LoginScreen from '../screens/LoginScreen/LoginScreen';
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+export default function AppNavigation() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName='HomeScreen'
+        initialRouteName='LoginScreen'
         screenOptions={{
           headerShown: false
         }}>
