@@ -36,7 +36,7 @@ const LoginScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
       auth().signInWithEmailAndPassword(email, password)
         .then(() => {
           setIsLoginProcess(false);
-          navigation.navigate("HomeScreen")
+          navigation.navigate("HomeScreen");
         })
         .catch(error => {
           setIsLoginProcess(false);
@@ -105,7 +105,7 @@ const LoginScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
           disabled={isLoginProcess}>
           {
             isLoginProcess ?
-              <ActivityIndicator color={'white'} style={styles.formButton} /> :
+              <ActivityIndicator color={"white"} style={styles.formButton} /> :
               <Text style={styles.formButton}>Log In</Text>
           }
         </TouchableOpacity>
@@ -113,7 +113,8 @@ const LoginScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
         <View style={styles.extractMessage}>
           <Text style={styles.message}>Do not have an account?</Text>
           <TouchableOpacity
-            activeOpacity={.8}>
+            activeOpacity={.8}
+            onPress={() => navigation.navigate("RegisterScreen")}>
             <Text style={styles.extractMessageButton}>Register now</Text>
           </TouchableOpacity>
         </View>
