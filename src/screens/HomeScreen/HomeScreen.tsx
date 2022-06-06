@@ -1,21 +1,30 @@
-import { Dimensions, Image, PermissionsAndroid, Platform, StatusBar, View } from "react-native";
-import React, { useEffect, useState } from "react";
+import {
+  PermissionsAndroid,
+  Platform,
+  StatusBar,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
 import styles from "./HomeScreen.styles";
 import { INavigationProps } from "../../navigations/INavigationProps";
-import MapView from "react-native-maps";
+import MapView, { Region } from "react-native-maps";
 import Geolocation, { GeoPosition } from "react-native-geolocation-service";
 import database from "@react-native-firebase/database";
 import { LATITUDE_DELTA, LONGITUDE_DELTA } from "../../utils/Constants";
 import { User } from "../../models/User";
 import CustomMarker from "../../components/CustomMarker/CustomMarker";
 import auth from "@react-native-firebase/auth";
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
 
   const reference = database().ref("/users");
 
+  const map = useRef<MapView>();
+
   const [users, setUsers] = useState<User[]>([]);
-  const [myRegion, setMyRegion] = useState({
+  const [myRegion, setMyRegion] = useState<Region>({
     latitude: 0,
     longitude: 0,
     latitudeDelta: LATITUDE_DELTA,
@@ -33,10 +42,13 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
   }
 
   useEffect(() => {
+    if (!auth().currentUser) {
+      navigation.navigate("LoginScreen");
+    }
     requestLocationPermission().then(result => {
       if (result) {
         getCurrentPosition();
-
+        watchPosition();
         // add realtime listener database
         reference
           .on("value", snapshot => {
@@ -51,14 +63,15 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
   const getCurrentPosition = () => {
     Geolocation.getCurrentPosition(
       (position) => {
-        setMyRegion({
+        updateLocationOnDatabase(position);
+        const region = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
-        });
-        updateLocationOnDatabase(position);
-        watchPosition();
+        };
+        setMyRegion(region);
+        map.current?.animateToRegion(region);
       },
       (error) => {
         console.log(error.code, error.message);
@@ -81,10 +94,9 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
       (error) => {
         console.log(error.code, error.message);
       },
-      { enableHighAccuracy: true },
+      { enableHighAccuracy: true, distanceFilter: 10 },
     );
   };
-
 
   const updateLocationOnDatabase = (position: GeoPosition) => {
     // update current location on realtime database
@@ -122,13 +134,17 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
     return false;
   };
 
+  function onPressGPSButton() {
+    getCurrentPosition();
+    map.current?.animateToRegion(myRegion);
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar translucent backgroundColor="transparent" />
       <MapView
-        style={styles.map}
-        initialRegion={myRegion}
-        region={myRegion}>
+        ref={map}
+        style={styles.map}>
         {
           users.map((user: User, index: number) => {
             return <CustomMarker
@@ -137,6 +153,16 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
           })
         }
       </MapView>
+
+      <TouchableOpacity
+        activeOpacity={.8}
+        style={styles.btnGPS}
+        onPress={onPressGPSButton}>
+        <Icon
+          size={24}
+          name={"my-location"}
+          color={"#454545"} />
+      </TouchableOpacity>
     </View>
   );
 };
