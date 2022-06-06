@@ -3,16 +3,18 @@ import React, { useEffect, useState } from "react";
 import styles from "./HomeScreen.styles";
 import { INavigationProps } from "../../navigations/INavigationProps";
 import MapView from "react-native-maps";
-import { Marker } from "react-native-maps";
-import Geolocation from "react-native-geolocation-service";
+import Geolocation, { GeoPosition } from "react-native-geolocation-service";
+import database from "@react-native-firebase/database";
+import { LATITUDE_DELTA, LONGITUDE_DELTA } from "../../utils/Constants";
+import { User } from "../../models/User";
+import CustomMarker from "../../components/CustomMarker/CustomMarker";
+import auth from "@react-native-firebase/auth";
 
 const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
 
-  const screen = Dimensions.get("window");
-  const ASPECT_RATIO = screen.width / screen.height;
-  const LATITUDE_DELTA = 0.0922;
-  const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+  const reference = database().ref("/users");
 
+  const [users, setUsers] = useState<User[]>([]);
   const [myRegion, setMyRegion] = useState({
     latitude: 0,
     longitude: 0,
@@ -20,10 +22,28 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
     longitudeDelta: LONGITUDE_DELTA,
   });
 
+  function getUserIndex(list: any) {
+    let index = -1;
+    list.map((user: User, i: number) => {
+      if (user.email === auth().currentUser?.email) {
+        index = i;
+      }
+    });
+    return index;
+  }
+
   useEffect(() => {
     requestLocationPermission().then(result => {
       if (result) {
         getCurrentPosition();
+
+        // add realtime listener database
+        reference
+          .on("value", snapshot => {
+            const list = snapshot.val();
+            setUsers(list);
+            getUserIndex(list);
+          });
       }
     });
   }, []);
@@ -37,8 +57,8 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         });
+        updateLocationOnDatabase(position);
         watchPosition();
-        console.log(position);
       },
       (error) => {
         console.log(error.code, error.message);
@@ -56,13 +76,34 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         });
-        console.log(position);
+        updateLocationOnDatabase(position);
       },
       (error) => {
         console.log(error.code, error.message);
       },
       { enableHighAccuracy: true },
     );
+  };
+
+
+  const updateLocationOnDatabase = (position: GeoPosition) => {
+    // update current location on realtime database
+    const userIndex = getUserIndex(users);
+    if (userIndex > -1) {
+      console.log(`Update user [${userIndex}]`);
+      let tempList: User[] = [...users];
+      let currentUser: User = { ...users[userIndex] as User };
+      currentUser.lat = position.coords.latitude;
+      currentUser.long = position.coords.longitude;
+      tempList[userIndex] = currentUser;
+      setUsers(tempList);
+
+      database()
+        .ref("/users/" + userIndex)
+        .set(currentUser)
+        .then(() => console.log("Data updated"))
+        .catch(e => console.log(e));
+    }
   };
 
   const requestLocationPermission = async (): Promise<boolean> => {
@@ -88,16 +129,13 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
         style={styles.map}
         initialRegion={myRegion}
         region={myRegion}>
-        <Marker
-          coordinate={myRegion}>
-          <View style={styles.markerWrapper}>
-            <View style={styles.markerBackground} />
-            <View style={styles.markerArrow} />
-            <Image
-              style={styles.markerAvatar}
-              source={{ uri: "https://media.istockphoto.com/photos/smiling-indian-man-looking-at-camera-picture-id1270067126?k=20&m=1270067126&s=612x612&w=0&h=ZMo10u07vCX6EWJbVp27c7jnnXM2z-VXLd-4maGePqc=" }} />
-          </View>
-        </Marker>
+        {
+          users.map((user: User, index: number) => {
+            return <CustomMarker
+              key={index}
+              user={user} />;
+          })
+        }
       </MapView>
     </View>
   );
