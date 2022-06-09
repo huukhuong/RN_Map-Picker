@@ -21,7 +21,7 @@ const HomeScreen: React.FC<INavigationProps> = ({ navigation, route }) => {
 
   const reference = database().ref("/users");
 
-  const map = useRef<MapView>();
+  const map = useRef<any>();
 
   const [users, setUsers] = useState<User[]>([]);
   const [myRegion, setMyRegion] = useState<Region>({
